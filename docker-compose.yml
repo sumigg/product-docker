@@ -1,7 +1,7 @@
 services:
   product-service:
     image: product-service:latest
-    build: ../product
+    build: ../product-service
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -14,7 +14,7 @@ services:
 
   recommendation-service:
     image: recommendation-service:latest
-    build: ../recommendation
+    build: ../recommendation-servise
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -38,7 +38,7 @@ services:
 
   product-composite:
     image: product-composite-service:latest
-    build: ../composite
+    build: ../product-composite-service
     mem_limit: 512m
     # ports:
     #   - "8080:8080"
@@ -62,7 +62,7 @@ services:
       start_period: 30s # Optional: Initial grace period before health checks begin
 
   mysql:
-    image: mysql:8.0.43-debian
+    image: mysql:8.4.6
     mem_limit: 512m
     ports:
       - "3306:3306"
@@ -101,7 +101,7 @@ services:
       KAFKA_NUM_PARTITIONS: 3
 
   eureka:
-    build: ../../config/eureka
+    build: ../product-eureka-server
     mem_limit: 512m
     # ports:
     #   - "8761:8761"
@@ -110,7 +110,7 @@ services:
   gateway:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    build: ../../config/gateway
+    build: ../gateway
     mem_limit: 512m
     ports:
       - "8080:8080"
