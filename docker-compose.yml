@@ -1,11 +1,16 @@
 services:
+
   product-service:
     image: product-service:latest
     build: ../product-service
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     depends_on:
+      config-server:
+        condition: service_healthy
       mongodb:
         condition: service_healthy
       broker:
@@ -18,7 +23,11 @@ services:
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     depends_on:
+      config-server:
+        condition: service_healthy
       mongodb:
         condition: service_healthy
       broker:
@@ -30,11 +39,15 @@ services:
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     depends_on:
       mysql:
         condition: service_healthy
       broker:
         condition: service_started
+      config-server:
+        condition: service_healthy
 
   product-composite:
     image: product-composite-service:latest
@@ -44,7 +57,11 @@ services:
     #   - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     depends_on:
+      config-server:
+        condition: service_healthy
       broker:
         condition: service_started
 
@@ -101,24 +118,38 @@ services:
       KAFKA_NUM_PARTITIONS: 3
 
   eureka:
+    environment:
+    - SPRING_PROFILES_ACTIVE=docker
+    - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+    - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     build: ../product-eureka-server
     mem_limit: 512m
-    # ports:
-    #   - "8761:8761"
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy   
       
 
   gateway:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     build: ../gateway
     mem_limit: 512m
     ports:
       - "8443:8443"
-
+    depends_on:
+      config-server:
+        condition: service_healthy
 
   auth-server:
+    # env_file: ./my_env.env
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     build: ../auth-server
     mem_limit: 512m
     # ports:
@@ -128,3 +159,33 @@ services:
       interval: 5s
       timeout: 2s
       retries: 60
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  config-server:
+    build: ../config-server
+    mem_limit: 512m
+    # env_file: ./my_env.env
+    ports:
+      - "8888:8888"
+    environment:
+    - SPRING_PROFILES_ACTIVE=docker
+    - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
+    - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+    - CONFIG_SERVER_ENCRYPT_KEY=${ENV_CONFIG_SERVER_ENCRYPT_KEY}
+    # - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
+    # - SPRING_SECURITY_USER_NAME=${ENV_CONFIG_SERVER_USR}
+    # - SPRING_SECURITY_USER_PASSWORD=${ENV_CONFIG_SERVER_PWD}
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://${ENV_CONFIG_SERVER_USR}:${ENV_CONFIG_SERVER_PWD}@localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 60   
+    # environment:
+    #   - SPRING_PROFILES_ACTIVE=docker,native
+    #   - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
+    #   - SPRING_SECURITY_USER_NAME=${CONFIG_SERVER_USR}
+    #   - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
+    # volumes:
+    #   - $PWD/config-repo:/config-repo
