@@ -164,7 +164,7 @@ services:
         condition: service_healthy
 
   config-server:
-    build: ../config-server
+    build: ../product-config-server
     mem_limit: 512m
     # env_file: ./my_env.env
     ports:
