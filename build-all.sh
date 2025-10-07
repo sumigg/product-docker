@@ -58,7 +58,7 @@ main() {
         "product-eureka-server"
         "gateway"
         "auth-server"
-        "config-server"
+        "product-config-server"
     )
 
     # Build core dependencies first
