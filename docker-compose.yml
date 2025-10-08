@@ -8,6 +8,13 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+      - JAVA_TOOL_OPTIONS=-javaagent:/application/lib/opentelemetry-javaagent-2.20.1.jar
+      - OTEL_SERVICE_NAME=product-service
+      # - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
+
     depends_on:
       config-server:
         condition: service_healthy
@@ -15,7 +22,10 @@ services:
         condition: service_healthy
       broker:
         condition: service_started
-
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
 
   recommendation-service:
     image: recommendation-service:latest
@@ -25,6 +35,12 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+      - JAVA_TOOL_OPTIONS=-javaagent:/application/lib/opentelemetry-javaagent-2.20.1.jar
+      # - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_SERVICE_NAME=recommendation-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     depends_on:
       config-server:
         condition: service_healthy
@@ -32,6 +48,10 @@ services:
         condition: service_healthy
       broker:
         condition: service_started
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
 
   review-service:
     image: review-service:latest
@@ -41,6 +61,12 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+      - JAVA_TOOL_OPTIONS=-javaagent:/application/lib/opentelemetry-javaagent-2.20.1.jar
+      # - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_SERVICE_NAME=review-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     depends_on:
       mysql:
         condition: service_healthy
@@ -48,22 +74,36 @@ services:
         condition: service_started
       config-server:
         condition: service_healthy
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
 
   product-composite:
     image: product-composite-service:latest
     build: ../product-composite-service
     mem_limit: 512m
-    # ports:
-    #   - "8080:8080"
+    ports:
+      - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+      - JAVA_TOOL_OPTIONS=-javaagent:/application/lib/opentelemetry-javaagent-2.20.1.jar
+      # - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_SERVICE_NAME=product-composite-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     depends_on:
       config-server:
         condition: service_healthy
       broker:
         condition: service_started
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
 
   mongodb:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
@@ -77,6 +117,12 @@ services:
       timeout: 5s
       retries: 6
       start_period: 30s # Optional: Initial grace period before health checks begin
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224   
+    depends_on:
+      - fluent-bit       
 
   mysql:
     image: mysql:8.4.6
@@ -94,8 +140,12 @@ services:
       timeout: 5s
       retries: 5
       start_period: 120s 
-
-
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224   
+    depends_on:
+      - fluent-bit       
 
   broker:
     image: apache/kafka:latest
@@ -116,12 +166,22 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 3
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224   
 
   eureka:
     environment:
     - SPRING_PROFILES_ACTIVE=docker
     - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
     - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+    - JAVA_TOOL_OPTIONS=-javaagent:/application/lib/opentelemetry-javaagent-2.20.1.jar
+    # - OTEL_LOGS_EXPORTER=otlp
+    - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+    - OTEL_SERVICE_NAME=eureka-server
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    - OTEL_METRICS_EXPORTER=none
     build: ../product-eureka-server
     mem_limit: 512m
     ports:
@@ -129,13 +189,22 @@ services:
     depends_on:
       config-server:
         condition: service_healthy   
-      
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224      
 
   gateway:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+      - JAVA_TOOL_OPTIONS=-javaagent:/application/lib/opentelemetry-javaagent-2.20.1.jar
+      # - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_SERVICE_NAME=gateway
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     build: ../gateway
     mem_limit: 512m
     ports:
@@ -143,6 +212,10 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
 
   auth-server:
     # env_file: ./my_env.env
@@ -150,6 +223,12 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
+      - JAVA_TOOL_OPTIONS=-javaagent:/application/lib/opentelemetry-javaagent-2.20.1.jar
+      # - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_SERVICE_NAME=auth-server
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     build: ../auth-server
     mem_limit: 512m
     # ports:
@@ -162,6 +241,10 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224
 
   config-server:
     build: ../product-config-server
@@ -174,6 +257,10 @@ services:
     - CONFIG_SERVER_USR=${ENV_CONFIG_SERVER_USR}
     - CONFIG_SERVER_PWD=${ENV_CONFIG_SERVER_PWD}
     - CONFIG_SERVER_ENCRYPT_KEY=${ENV_CONFIG_SERVER_ENCRYPT_KEY}
+    # - JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-2.20.1.jar
+    # - OTEL_SERVICE_NAME=config-server
+    # - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+    # - OTEL_METRICS_EXPORTER=none
     # - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
     # - SPRING_SECURITY_USER_NAME=${ENV_CONFIG_SERVER_USR}
     # - SPRING_SECURITY_USER_PASSWORD=${ENV_CONFIG_SERVER_PWD}
@@ -182,6 +269,12 @@ services:
       interval: 5s
       timeout: 2s
       retries: 60   
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 127.0.0.1:24224   
+    depends_on:
+      - grafana       
     # environment:
     #   - SPRING_PROFILES_ACTIVE=docker,native
     #   - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
@@ -189,3 +282,61 @@ services:
     #   - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
     # volumes:
     #   - $PWD/config-repo:/config-repo
+
+
+  # Observability
+
+  grafana:
+    image: grafana/grafana-oss:10.4.3
+    container_name: grafana
+    depends_on:
+      - loki
+      - prometheus
+      - tempo
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=user
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    volumes:
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./observability/grafana/grafana.ini:/etc/grafana/grafana.ini
+
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    depends_on:
+      - fluent-bit
+    ports:
+      - "3100:3100"
+
+  fluent-bit:
+    image: grafana/fluent-bit-plugin-loki:2.9.8
+    container_name: fluent-bit
+    ports:
+      - "24224:24224"
+    environment:
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+    volumes:
+      - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+
+
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    container_name: tempo
+    command: -config.file=/etc/tempo-config.yml
+    ports:
+      - "3110:3100"     # Tempo
+      - "4317:4317"     # OTel
+      # - "4318:4318"  
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo-config.yml
