@@ -148,7 +148,7 @@ services:
       - fluent-bit       
 
   broker:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.1
     hostname: broker
     container_name: broker
     ports:
@@ -170,6 +170,8 @@ services:
       driver: fluentd
       options:
         fluentd-address: 127.0.0.1:24224   
+    depends_on:
+      - fluent-bit  
 
   eureka:
     environment:
@@ -328,7 +330,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:rw
 
   tempo:
     image: grafana/tempo:2.5.0
